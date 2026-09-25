@@ -1,5 +1,6 @@
 "use client";
 
+import MarketHistoryChart from "@/components/MarketHistoryChart";
 import { useMemo, useState } from "react";
 import { BarChart3, ChevronRight, Gauge, LayoutDashboard, ShieldAlert, WalletCards } from "lucide-react";
 import { closingRates, limits, markets, performance, positions, type Position } from "@/lib/data";
@@ -253,8 +254,14 @@ function MarketTableCard({ name, quotes }: { name: string; quotes: { tenor: stri
 function Markets() {
   return (
     <div className="stackGrid">
+      <MarketHistoryChart />
+
       {markets.map((table) => (
-        <MarketTableCard key={table.name} name={table.name} quotes={table.quotes} />
+        <MarketTableCard
+          key={table.name}
+          name={table.name}
+          quotes={table.quotes}
+        />
       ))}
     </div>
   );
