@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Trading Desk Dashboard",
+  title: "Trading Propietario Dashboard",
   description: "Dashboard ejecutivo de resultados, posiciones y límites de trading",
 };
 
