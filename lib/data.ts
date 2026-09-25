@@ -13,12 +13,12 @@ export const closingRates = [
 ];
 
 export const positions = [
-  { instrument: "BTP 2030", duration: 1.9, dv01: -3.4 },
-  { instrument: "BTP 2035", duration: 4.8, dv01: -8.2 },
-  { instrument: "BTU 2032", duration: 3.7, dv01: 5.1 },
-  { instrument: "BTU 2040", duration: 7.6, dv01: -2.9 },
-  { instrument: "IRS CLP 5Y", duration: 4.9, dv01: 6.4 },
-  { instrument: "Cross UF/CLP 7Y", duration: 6.1, dv01: -4.0 },
+  { instrument: "DPF", duration: 0.65, dv01: -63.7 },
+  { instrument: "DPR", duration: 1.07, dv01: -1.5 },
+  { instrument: "Bancarios CLP", duration: 1.30, dv01: -5.6 },
+  { instrument: "Bancarios UF", duration: 1.73, dv01: -1.5 },
+  { instrument: "Gobierno CLP", duration: 2.81, dv01: -31.7 },
+  { instrument: "Gobierno UF", duration: 2.87, dv01: -24.1 },
 ];
 
 export const limits = [
@@ -26,8 +26,8 @@ export const limits = [
   { name: "Derivados CLP", min: -22, max: 22, current: 8 },
   { name: "Gobierno UF", min: -25, max: 20, current: -6 },
   { name: "Derivados UF", min: -18, max: 18, current: 11 },
-  { name: "IIF CLP", min: -16, max: 14, current: -9 },
-  { name: "IIF UF", min: -12, max: 12, current: 3 },
-  { name: "RF Bancario CLP", min: -20, max: 18, current: 7 },
-  { name: "RF Bancario UF", min: -15, max: 12, current: -4 },
+  { name: "DPF", min: -16, max: 14, current: -9 },
+  { name: "DPR", min: -12, max: 12, current: 3 },
+  { name: "Bancarios CLP", min: -20, max: 18, current: 7 },
+  { name: "Bancarios UF", min: -15, max: 12, current: -4 },
 ];
