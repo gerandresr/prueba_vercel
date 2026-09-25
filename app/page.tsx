@@ -187,8 +187,8 @@ function LimitScale({ name, min, max, current }: { name: string; min: number; ma
   );
 }
 
-function LimitsPanel({ compact = false }: { compact?: boolean }) {
-  const rows = compact ? limits.slice(0, 5) : limits;
+function LimitsPanel() {
+  const rows = limits;
   return (
     <div className="card section sectionAuto">
       <div className="sectionTitle">
@@ -214,7 +214,7 @@ function Summary() {
       <div className="stackGrid">
         <RatesTable />
         <PositionsTable compact />
-        <LimitsPanel compact />
+        <LimitsPanel />
       </div>
     </>
   );
