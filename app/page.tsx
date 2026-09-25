@@ -1,65 +1,316 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { AreaChart, Area, BarChart, Bar, CartesianGrid, Cell, Line, LineChart, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import { BarChart3, Gauge, LayoutDashboard, LineChart as LineIcon, ShieldAlert, WalletCards } from "lucide-react";
-import { deskResults, limits, monthlyPnl, positions, productPnl } from "@/lib/data";
+import { BarChart3, Gauge, LayoutDashboard, ShieldAlert, WalletCards } from "lucide-react";
+import { closingRates, limits, performance, positions } from "@/lib/data";
 
 type View = "Resumen" | "Resultados" | "Posiciones" | "Límites";
 
-const fmt = new Intl.NumberFormat("es-CL", { maximumFractionDigits: 1 });
+const numFmt = new Intl.NumberFormat("es-CL", { maximumFractionDigits: 1, minimumFractionDigits: 1 });
+const moneyFmt = new Intl.NumberFormat("es-CL", { maximumFractionDigits: 0 });
 
-function Kpi({ label, value, foot, positive=true }: { label:string; value:string; foot:string; positive?:boolean }) {
-  return <div className="card kpi"><div className="kpiTop"><span>{label}</span><BarChart3 size={15}/></div><div className="kpiValue">{value}</div><div className={`kpiFoot ${positive ? "up" : "down"}`}>{foot}</div></div>
+function calcCompliance(actual: number, budget: number) {
+  if (!budget) return 0;
+  return (actual / budget) * 100;
 }
 
-function LimitRows({ compact=false }: { compact?: boolean }) {
-  return <div>{limits.slice(0, compact ? 4 : limits.length).map((l) => {
-    const pct = Math.min(100, l.current / l.limit * 100);
-    return <div className="limitRow" key={l.name}><div className="limitHead"><span>{l.name}</span><span>{pct.toFixed(0)}%</span></div><div className="bar"><div className={`fill ${pct >= 80 ? "warn" : ""}`} style={{width:`${pct}%`}}/></div><div className="smallMeta"><span>{fmt.format(l.current)} {l.unit}</span><span>Límite {fmt.format(l.limit)}</span></div></div>
-  })}</div>
+function KpiCard({
+  label,
+  actual,
+  budget,
+}: {
+  label: string;
+  actual: number;
+  budget: number;
+}) {
+  const compliance = calcCompliance(actual, budget);
+  const positive = compliance >= 100;
+
+  return (
+    <div className="card kpi">
+      <div className="kpiTop">
+        <span>{label}</span>
+        <BarChart3 size={15} />
+      </div>
+      <div className="kpiValue">${moneyFmt.format(actual)} MM</div>
+      <div className={`kpiFoot ${positive ? "up" : "warn"}`}>
+        Cumplimiento: {numFmt.format(compliance)}%
+      </div>
+      <div className="smallMeta singleLine">Meta: ${moneyFmt.format(budget)} MM</div>
+    </div>
+  );
+}
+
+function RatesTable() {
+  return (
+    <div className="card tableCard">
+      <div className="tableToolbar">
+        <div>
+          <h3>Tasas de cierre</h3>
+          <div className="emptyNote">Benchmarks CLP y UF</div>
+        </div>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>Benchmark</th>
+            <th className="num">Tasa</th>
+            <th className="num">Delta (bp)</th>
+          </tr>
+        </thead>
+        <tbody>
+          {closingRates.map((row) => (
+            <tr key={row.benchmark}>
+              <td><strong>{row.benchmark}</strong></td>
+              <td className="num">{numFmt.format(row.rate)}%</td>
+              <td className={`num ${row.deltaBp > 0 ? "down" : row.deltaBp < 0 ? "up" : "mutedText"}`}>
+                {row.deltaBp > 0 ? "+" : ""}
+                {numFmt.format(row.deltaBp)} bp
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function PositionsTable({ compact = false }: { compact?: boolean }) {
+  const rows = compact ? positions.slice(0, 6) : positions;
+  return (
+    <div className="card tableCard">
+      <div className="tableToolbar">
+        <div>
+          <h3>Posiciones</h3>
+          <div className="emptyNote">Duración y DV01 por instrumento</div>
+        </div>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>Instrumento</th>
+            <th className="num">Duración</th>
+            <th className="num">DV01</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((row) => (
+            <tr key={row.instrument}>
+              <td><strong>{row.instrument}</strong></td>
+              <td className="num">{numFmt.format(row.duration)}</td>
+              <td className={`num ${row.dv01 > 0 ? "down" : row.dv01 < 0 ? "up" : "mutedText"}`}>
+                {row.dv01 > 0 ? "+" : ""}
+                {numFmt.format(row.dv01)}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function LimitScale({ name, min, max, current }: { name: string; min: number; max: number; current: number }) {
+  const domain = max - min;
+  const zeroPct = ((0 - min) / domain) * 100;
+  const currentPct = ((current - min) / domain) * 100;
+  const left = Math.min(zeroPct, currentPct);
+  const width = Math.abs(currentPct - zeroPct);
+  const tone = current > 0 ? "positive" : current < 0 ? "negative" : "neutral";
+
+  return (
+    <div className="limitRangeRow">
+      <div className="limitRangeHead">
+        <div>
+          <strong>{name}</strong>
+          <small>Rango {min} a {max}</small>
+        </div>
+        <div className={`limitCurrent ${tone}`}>
+          Actual: {current > 0 ? "+" : ""}{numFmt.format(current)}
+        </div>
+      </div>
+      <div className="limitTrackWrap">
+        <span className="axisLabel left">{numFmt.format(min)}</span>
+        <div className="limitTrack">
+          <div className="zeroLine" style={{ left: `${zeroPct}%` }} />
+          <div className={`rangeFill ${tone}`} style={{ left: `${left}%`, width: `${width}%` }} />
+          <div className={`limitMarker ${tone}`} style={{ left: `${currentPct}%` }} />
+        </div>
+        <span className="axisLabel right">+{numFmt.format(max)}</span>
+      </div>
+    </div>
+  );
+}
+
+function LimitsPanel({ compact = false }: { compact?: boolean }) {
+  const rows = compact ? limits.slice(0, 5) : limits;
+  return (
+    <div className="card section sectionAuto">
+      <div className="sectionTitle">
+        <h3>Límites</h3>
+        <span>DV01 en pesos</span>
+      </div>
+      <div className="limitRangeList">
+        {rows.map((row) => (
+          <LimitScale key={row.name} {...row} />
+        ))}
+      </div>
+    </div>
+  );
 }
 
 function Summary() {
-  return <>
-    <div className="grid5">
-      <Kpi label="P&L Mes" value="$113 MM" foot="↑ 8,4% vs mes anterior"/>
-      <Kpi label="P&L YTD" value="$905 MM" foot="↑ 34,1% vs presupuesto"/>
-      <Kpi label="Cumplimiento" value="134%" foot="Presupuesto YTD: $675 MM"/>
-      <Kpi label="DV01 Total" value="$12,6 MM/bp" foot="70% del límite"/>
-      <Kpi label="Exposición USD" value="US$9,7 MM" foot="65% del límite"/>
-    </div>
-    <div className="sectionGrid">
-      <div className="card section"><div className="sectionTitle"><h3>P&L acumulado vs presupuesto</h3><div className="legend"><span><i style={{background:"#4f9cff"}}/>Real</span><span><i style={{background:"#57d8e8"}}/>Presupuesto</span></div></div><div className="chartWrap"><ResponsiveContainer width="100%" height="100%"><AreaChart data={monthlyPnl}><defs><linearGradient id="pnl" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#4f9cff" stopOpacity={.32}/><stop offset="95%" stopColor="#4f9cff" stopOpacity={0}/></linearGradient></defs><CartesianGrid stroke="rgba(255,255,255,.05)" vertical={false}/><XAxis dataKey="month" stroke="#758aa5" tickLine={false} axisLine={false}/><YAxis stroke="#758aa5" tickLine={false} axisLine={false}/><Tooltip contentStyle={{background:"#0c1829",border:"1px solid rgba(255,255,255,.1)",borderRadius:10}}/><Area type="monotone" dataKey="pnl" stroke="#4f9cff" strokeWidth={2.5} fill="url(#pnl)"/><Line type="monotone" dataKey="budget" stroke="#57d8e8" strokeWidth={2} strokeDasharray="5 5" dot={false}/></AreaChart></ResponsiveContainer></div></div>
-      <div className="card section"><div className="sectionTitle"><h3>Utilización de límites</h3><span>Actualizado 08:45</span></div><LimitRows compact/></div>
-    </div>
-    <div className="sectionGrid" style={{gridTemplateColumns:"1fr 1fr"}}>
-      <div className="card section"><div className="sectionTitle"><h3>P&L por producto</h3><span>MM CLP</span></div><div className="chartWrap"><ResponsiveContainer><BarChart data={productPnl} layout="vertical"><CartesianGrid stroke="rgba(255,255,255,.05)" horizontal={false}/><XAxis type="number" stroke="#758aa5" axisLine={false} tickLine={false}/><YAxis type="category" dataKey="name" width={90} stroke="#9db0c8" axisLine={false} tickLine={false}/><Tooltip contentStyle={{background:"#0c1829",border:"1px solid rgba(255,255,255,.1)",borderRadius:10}}/><Bar dataKey="value" fill="#4f9cff" radius={[0,6,6,0]}/></BarChart></ResponsiveContainer></div></div>
-      <div className="card section"><div className="sectionTitle"><h3>Composición del resultado</h3><span>YTD</span></div><div className="chartWrap"><ResponsiveContainer><PieChart><Pie data={productPnl} dataKey="value" nameKey="name" innerRadius={70} outerRadius={105} paddingAngle={3}>{productPnl.map((_,i)=><Cell key={i} fill={["#4f9cff","#57d8e8","#31d098","#f4b860"][i]}/>)}</Pie><Tooltip contentStyle={{background:"#0c1829",border:"1px solid rgba(255,255,255,.1)",borderRadius:10}}/></PieChart></ResponsiveContainer></div></div>
-    </div>
-  </>
+  return (
+    <>
+      <div className="grid2">
+        <KpiCard label="Resultado mensual" actual={performance.monthly.actual} budget={performance.monthly.budget} />
+        <KpiCard label="Resultado anual" actual={performance.annual.actual} budget={performance.annual.budget} />
+      </div>
+      <div className="stackGrid">
+        <RatesTable />
+        <PositionsTable compact />
+        <LimitsPanel compact />
+      </div>
+    </>
+  );
 }
 
 function Results() {
-  return <div className="pageGrid">
-    <div className="card section wide"><div className="sectionTitle"><h3>Resultado acumulado 2026</h3><span>MM CLP</span></div><div className="chartWrap"><ResponsiveContainer><LineChart data={monthlyPnl}><CartesianGrid stroke="rgba(255,255,255,.05)" vertical={false}/><XAxis dataKey="month" stroke="#758aa5" axisLine={false} tickLine={false}/><YAxis stroke="#758aa5" axisLine={false} tickLine={false}/><Tooltip contentStyle={{background:"#0c1829",border:"1px solid rgba(255,255,255,.1)",borderRadius:10}}/><Line dataKey="pnl" stroke="#4f9cff" strokeWidth={3}/><Line dataKey="budget" stroke="#57d8e8" strokeDasharray="6 6" dot={false}/></LineChart></ResponsiveContainer></div></div>
-    <div className="card section wide"><div className="sectionTitle"><h3>Resultados por mesa / producto</h3><span>YTD</span></div><div className="resultList">{deskResults.map(r => <div className="resultItem" key={r.desk}><div><strong>{r.desk}</strong><small>Resultado acumulado</small></div><div><strong>${r.actual} MM</strong><small>Real</small></div><div><strong>${r.budget} MM</strong><small>Presupuesto</small></div><div><strong className={r.actual >= r.budget ? "up":"down"}>{(r.actual/r.budget*100).toFixed(0)}%</strong><small>{r.yoy >= 0 ? "+":""}{r.yoy}% YoY</small></div></div>)}</div></div>
-  </div>
+  const monthlyCompliance = calcCompliance(performance.monthly.actual, performance.monthly.budget);
+  const annualCompliance = calcCompliance(performance.annual.actual, performance.annual.budget);
+
+  return (
+    <div className="pageGrid singleCol">
+      <div className="card tableCard">
+        <div className="tableToolbar">
+          <div>
+            <h3>Resultados</h3>
+            <div className="emptyNote">Actual vs meta</div>
+          </div>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Horizonte</th>
+              <th className="num">Actual</th>
+              <th className="num">Meta</th>
+              <th className="num">Cumplimiento</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Mensual</strong></td>
+              <td className="num">${moneyFmt.format(performance.monthly.actual)} MM</td>
+              <td className="num">${moneyFmt.format(performance.monthly.budget)} MM</td>
+              <td className={`num ${monthlyCompliance >= 100 ? "up" : "warn"}`}>{numFmt.format(monthlyCompliance)}%</td>
+            </tr>
+            <tr>
+              <td><strong>Anual</strong></td>
+              <td className="num">${moneyFmt.format(performance.annual.actual)} MM</td>
+              <td className="num">${moneyFmt.format(performance.annual.budget)} MM</td>
+              <td className={`num ${annualCompliance >= 100 ? "up" : "warn"}`}>{numFmt.format(annualCompliance)}%</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <RatesTable />
+    </div>
+  );
 }
 
-function Positions() {
-  const [q,setQ]=useState("");
-  const rows=useMemo(()=>positions.filter(p=>`${p.instrument} ${p.book} ${p.currency}`.toLowerCase().includes(q.toLowerCase())),[q]);
-  return <div className="card tableCard"><div className="tableToolbar"><div><h3>Posiciones actuales</h3><div className="emptyNote">Datos de ejemplo · cartera consolidada</div></div><input className="search" placeholder="Buscar instrumento..." value={q} onChange={e=>setQ(e.target.value)}/></div><table><thead><tr><th>Instrumento</th><th>Libro</th><th>Moneda</th><th className="num">Nominal</th><th className="num">MTM</th><th className="num">DV01</th><th className="num">Duración</th><th className="num">P&L</th></tr></thead><tbody>{rows.map(p=><tr key={p.instrument}><td><strong>{p.instrument}</strong></td><td><span className="tag">{p.book}</span></td><td>{p.currency}</td><td className="num">{fmt.format(p.notional)}</td><td className="num">{fmt.format(p.mtm)}</td><td className="num">{fmt.format(p.dv01)}</td><td className="num">{fmt.format(p.duration)}</td><td className={`num ${p.pnl>=0?"up":"down"}`}>{p.pnl>=0?"+":""}{fmt.format(p.pnl)}</td></tr>)}</tbody></table></div>
+function PositionsView() {
+  const [q, setQ] = useState("");
+  const rows = useMemo(
+    () => positions.filter((p) => p.instrument.toLowerCase().includes(q.toLowerCase())),
+    [q]
+  );
+
+  return (
+    <div className="card tableCard">
+      <div className="tableToolbar">
+        <div>
+          <h3>Posiciones</h3>
+          <div className="emptyNote">Filtra por nombre del instrumento</div>
+        </div>
+        <input className="search" placeholder="Buscar instrumento..." value={q} onChange={(e) => setQ(e.target.value)} />
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>Instrumento</th>
+            <th className="num">Duración</th>
+            <th className="num">DV01</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((row) => (
+            <tr key={row.instrument}>
+              <td><strong>{row.instrument}</strong></td>
+              <td className="num">{numFmt.format(row.duration)}</td>
+              <td className={`num ${row.dv01 > 0 ? "down" : row.dv01 < 0 ? "up" : "mutedText"}`}>
+                {row.dv01 > 0 ? "+" : ""}
+                {numFmt.format(row.dv01)}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
 }
 
-function Limits() {
-  const max = limits.reduce((a,b)=> a.current/a.limit > b.current/b.limit ? a:b);
-  return <div className="pageGrid"><div className="card section"><div className="sectionTitle"><h3>Estado de límites</h3><span>Riesgo mercado</span></div><LimitRows/></div><div className="card section"><div className="sectionTitle"><h3>Mayor utilización</h3><span>{max.name}</span></div><div className="utilBig">{(max.current/max.limit*100).toFixed(0)}%</div><div className="bar" style={{height:12}}><div className="fill" style={{width:`${max.current/max.limit*100}%`}}/></div><p className="emptyNote" style={{marginTop:18}}>Ningún límite se encuentra excedido en los datos de ejemplo. Puedes reemplazar estos valores por límites reales desde <code>lib/data.ts</code>.</p></div><div className="card section wide"><div className="sectionTitle"><h3>Utilización comparada</h3><span>% del límite</span></div><div className="chartWrap"><ResponsiveContainer><BarChart data={limits.map(l=>({...l,pct:+(l.current/l.limit*100).toFixed(1)}))}><CartesianGrid stroke="rgba(255,255,255,.05)" vertical={false}/><XAxis dataKey="name" stroke="#758aa5" tick={{fontSize:11}} axisLine={false} tickLine={false}/><YAxis domain={[0,100]} stroke="#758aa5" axisLine={false} tickLine={false}/><Tooltip contentStyle={{background:"#0c1829",border:"1px solid rgba(255,255,255,.1)",borderRadius:10}}/><Bar dataKey="pct" fill="#57d8e8" radius={[6,6,0,0]}/></BarChart></ResponsiveContainer></div></div></div>
+function LimitsView() {
+  return <LimitsPanel />;
 }
 
-export default function Home(){
-  const [view,setView]=useState<View>("Resumen");
-  const nav:[View,React.ReactNode][]=[["Resumen",<LayoutDashboard size={17} key="a"/>],["Resultados",<LineIcon size={17} key="b"/>],["Posiciones",<WalletCards size={17} key="c"/>],["Límites",<ShieldAlert size={17} key="d"/>]];
-  return <div className="app"><aside className="sidebar"><div className="brand"><div className="logo"><Gauge size={22}/></div><div><strong>Trading Desk</strong><span>Risk & Performance</span></div></div><div className="nav">{nav.map(([n,icon])=><button key={n} className={view===n?"active":""} onClick={()=>setView(n)}>{icon}<span>{n}</span></button>)}</div><div className="sidebarFoot">MVP demostrativo<br/><strong style={{color:"#dbe8f8"}}>Datos ficticios</strong></div></aside><main className="main"><header className="header"><div><h1>{view}</h1><p>Gerencia de Intermediación Financiera · Dashboard de gestión</p></div><div className="headerRight"><div className="pill"><span className="dot"/>Mercado abierto</div><select className="dateSelect" defaultValue="Sep 2026"><option>Sep 2026</option><option>Ago 2026</option><option>Jul 2026</option></select></div></header>{view==="Resumen"&&<Summary/>}{view==="Resultados"&&<Results/>}{view==="Posiciones"&&<Positions/>}{view==="Límites"&&<Limits/>}</main></div>
+export default function Home() {
+  const [view, setView] = useState<View>("Resumen");
+  const nav: [View, React.ReactNode][] = [
+    ["Resumen", <LayoutDashboard size={17} key="a" />],
+    ["Resultados", <BarChart3 size={17} key="b" />],
+    ["Posiciones", <WalletCards size={17} key="c" />],
+    ["Límites", <ShieldAlert size={17} key="d" />],
+  ];
+
+  return (
+    <div className="app">
+      <aside className="sidebar">
+        <div className="brand">
+          <div className="logo">
+            <Gauge size={22} />
+          </div>
+          <div>
+            <strong>Trading Desk</strong>
+            <span>Monitoreo de tasas y DV01</span>
+          </div>
+        </div>
+        <div className="nav">
+          {nav.map(([n, icon]) => (
+            <button key={n} className={view === n ? "active" : ""} onClick={() => setView(n)}>
+              {icon}
+              <span>{n}</span>
+            </button>
+          ))}
+        </div>
+        <div className="sidebarFoot">
+          Dashboard editable desde <strong style={{ color: "#dbe8f8" }}>lib/data.ts</strong>
+        </div>
+      </aside>
+      <main className="main">
+        <header className="header">
+          <div>
+            <h1>{view}</h1>
+            <p>Gerencia de Intermediación Financiera · Monitor de cierre y límites</p>
+          </div>
+          <div className="headerRight">
+            <div className="pill"><span className="dot" />Mercado abierto</div>
+          </div>
+        </header>
+        {view === "Resumen" && <Summary />}
+        {view === "Resultados" && <Results />}
+        {view === "Posiciones" && <PositionsView />}
+        {view === "Límites" && <LimitsView />}
+      </main>
+    </div>
+  );
 }
