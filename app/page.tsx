@@ -1,8 +1,8 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { BarChart3, Gauge, LayoutDashboard, ShieldAlert, WalletCards } from "lucide-react";
-import { closingRates, limits, performance, positions } from "@/lib/data";
+import { BarChart3, ChevronRight, Gauge, LayoutDashboard, ShieldAlert, WalletCards } from "lucide-react";
+import { closingRates, limits, performance, positions, type Position } from "@/lib/data";
 
 type View = "Resumen" | "Resultados" | "Posiciones" | "Límites";
 
@@ -75,6 +75,58 @@ function RatesTable() {
   );
 }
 
+function dv01Class(dv01: number) {
+  return dv01 > 0 ? "down" : dv01 < 0 ? "up" : "mutedText";
+}
+
+function PositionRows({ row }: { row: Position }) {
+  const [open, setOpen] = useState(false);
+  const hasChildren = !!row.children?.length;
+
+  return (
+    <>
+      <tr
+        className={hasChildren ? "expandable" : undefined}
+        onClick={hasChildren ? () => setOpen((v) => !v) : undefined}
+        aria-expanded={hasChildren ? open : undefined}
+      >
+        <td>
+          <span className="instrumentCell">
+            {hasChildren ? (
+              <ChevronRight size={14} className={`expandChevron ${open ? "open" : ""}`} aria-hidden />
+            ) : (
+              <span className="expandChevronSpacer" aria-hidden />
+            )}
+            <strong>{row.instrument}</strong>
+          </span>
+        </td>
+        <td className="num">{numFmt.format(row.duration)}</td>
+        <td className={`num ${dv01Class(row.dv01)}`}>
+          {row.dv01 > 0 ? "+" : ""}
+          {numFmt.format(row.dv01)}
+        </td>
+      </tr>
+      {hasChildren &&
+        open &&
+        row.children!.map((child) => (
+          <tr key={`${row.instrument}-${child.instrument}`} className="subRow">
+            <td>
+              <span className="instrumentCell sub">
+                <span className="expandChevronSpacer" aria-hidden />
+                {child.instrument}
+              </span>
+            </td>
+            <td className="num">{numFmt.format(child.duration)}</td>
+            <td className={`num ${dv01Class(child.dv01)}`}>
+              {child.dv01 > 0 ? "+" : ""}
+              {numFmt.format(child.dv01)}
+            </td>
+          </tr>
+        ))}
+    </>
+  );
+}
+
 function PositionsTable({ compact = false }: { compact?: boolean }) {
   const rows = compact ? positions.slice(0, 6) : positions;
   return (
@@ -95,14 +147,7 @@ function PositionsTable({ compact = false }: { compact?: boolean }) {
         </thead>
         <tbody>
           {rows.map((row) => (
-            <tr key={row.instrument}>
-              <td><strong>{row.instrument}</strong></td>
-              <td className="num">{numFmt.format(row.duration)}</td>
-              <td className={`num ${row.dv01 > 0 ? "down" : row.dv01 < 0 ? "up" : "mutedText"}`}>
-                {row.dv01 > 0 ? "+" : ""}
-                {numFmt.format(row.dv01)}
-              </td>
-            </tr>
+            <PositionRows key={row.instrument} row={row} />
           ))}
         </tbody>
       </table>
@@ -244,14 +289,7 @@ function PositionsView() {
         </thead>
         <tbody>
           {rows.map((row) => (
-            <tr key={row.instrument}>
-              <td><strong>{row.instrument}</strong></td>
-              <td className="num">{numFmt.format(row.duration)}</td>
-              <td className={`num ${row.dv01 > 0 ? "down" : row.dv01 < 0 ? "up" : "mutedText"}`}>
-                {row.dv01 > 0 ? "+" : ""}
-                {numFmt.format(row.dv01)}
-              </td>
-            </tr>
+            <PositionRows key={row.instrument} row={row} />
           ))}
         </tbody>
       </table>
