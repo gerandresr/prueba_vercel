@@ -70,6 +70,64 @@ export const positions: Position[] = [
   },
 ];
 
+export type MarketQuote = { tenor: string; mid: number };
+export type MarketTable = { name: string; quotes: MarketQuote[] };
+
+export const markets: MarketTable[] = [
+  {
+    name: "Swap CLP",
+    quotes: [
+      { tenor: "1M", mid: 5.38 },
+      { tenor: "3M", mid: 5.31 },
+      { tenor: "6M", mid: 5.19 },
+      { tenor: "1Y", mid: 4.95 },
+      { tenor: "2Y", mid: 4.78 },
+      { tenor: "5Y", mid: 5.12 },
+      { tenor: "10Y", mid: 5.54 },
+    ],
+  },
+  {
+    name: "CCS",
+    quotes: [
+      { tenor: "1Y", mid: 1.42 },
+      { tenor: "2Y", mid: 1.58 },
+      { tenor: "3Y", mid: 1.71 },
+      { tenor: "5Y", mid: 1.93 },
+      { tenor: "10Y", mid: 2.24 },
+    ],
+  },
+  {
+    name: "Sofr",
+    quotes: [
+      { tenor: "1M", mid: 4.86 },
+      { tenor: "3M", mid: 4.72 },
+      { tenor: "6M", mid: 4.55 },
+      { tenor: "1Y", mid: 4.21 },
+      { tenor: "2Y", mid: 3.88 },
+      { tenor: "5Y", mid: 3.79 },
+    ],
+  },
+  {
+    name: "Breakeven",
+    quotes: [
+      { tenor: "1Y", mid: 3.05 },
+      { tenor: "2Y", mid: 3.18 },
+      { tenor: "5Y", mid: 3.34 },
+      { tenor: "10Y", mid: 3.41 },
+    ],
+  },
+  {
+    name: "USDCLP NDF",
+    quotes: [
+      { tenor: "Spot", mid: 948.5 },
+      { tenor: "1M", mid: 951.2 },
+      { tenor: "3M", mid: 956.8 },
+      { tenor: "6M", mid: 964.1 },
+      { tenor: "1Y", mid: 978.4 },
+    ],
+  },
+];
+
 export const limits = [
   { name: "Gobierno CLP", min: -35, max: 25, current: -31 },
   { name: "Derivados CLP", min: -22, max: 22, current: 8 },

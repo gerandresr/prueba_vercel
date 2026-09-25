@@ -2,9 +2,9 @@
 
 import { useMemo, useState } from "react";
 import { BarChart3, ChevronRight, Gauge, LayoutDashboard, ShieldAlert, WalletCards } from "lucide-react";
-import { closingRates, limits, performance, positions, type Position } from "@/lib/data";
+import { closingRates, limits, markets, performance, positions, type Position } from "@/lib/data";
 
-type View = "Resumen" | "Resultados" | "Posiciones" | "Límites";
+type View = "Resumen" | "Mercados" | "Posiciones" | "Límites";
 
 const numFmt = new Intl.NumberFormat("es-CL", { maximumFractionDigits: 1, minimumFractionDigits: 1 });
 const moneyFmt = new Intl.NumberFormat("es-CL", { maximumFractionDigits: 0 });
@@ -220,45 +220,42 @@ function Summary() {
   );
 }
 
-function Results() {
-  const monthlyCompliance = calcCompliance(performance.monthly.actual, performance.monthly.budget);
-  const annualCompliance = calcCompliance(performance.annual.actual, performance.annual.budget);
+const midFmt = new Intl.NumberFormat("es-CL", { maximumFractionDigits: 2, minimumFractionDigits: 2 });
 
+function MarketTableCard({ name, quotes }: { name: string; quotes: { tenor: string; mid: number }[] }) {
   return (
-    <div className="pageGrid singleCol">
-      <div className="card tableCard">
-        <div className="tableToolbar">
-          <div>
-            <h3>Resultados</h3>
-            <div className="emptyNote">Actual vs meta</div>
-          </div>
+    <div className="card tableCard">
+      <div className="tableToolbar">
+        <div>
+          <h3>{name}</h3>
         </div>
-        <table>
-          <thead>
-            <tr>
-              <th>Horizonte</th>
-              <th className="num">Actual</th>
-              <th className="num">Meta</th>
-              <th className="num">Cumplimiento</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td><strong>Mensual</strong></td>
-              <td className="num">${moneyFmt.format(performance.monthly.actual)} MM</td>
-              <td className="num">${moneyFmt.format(performance.monthly.budget)} MM</td>
-              <td className={`num ${monthlyCompliance >= 100 ? "up" : "warn"}`}>{numFmt.format(monthlyCompliance)}%</td>
-            </tr>
-            <tr>
-              <td><strong>Anual</strong></td>
-              <td className="num">${moneyFmt.format(performance.annual.actual)} MM</td>
-              <td className="num">${moneyFmt.format(performance.annual.budget)} MM</td>
-              <td className={`num ${annualCompliance >= 100 ? "up" : "warn"}`}>{numFmt.format(annualCompliance)}%</td>
-            </tr>
-          </tbody>
-        </table>
       </div>
-      <RatesTable />
+      <table>
+        <thead>
+          <tr>
+            <th>Tenor</th>
+            <th className="num">Mid</th>
+          </tr>
+        </thead>
+        <tbody>
+          {quotes.map((q) => (
+            <tr key={q.tenor}>
+              <td><strong>{q.tenor}</strong></td>
+              <td className="num">{midFmt.format(q.mid)}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function Markets() {
+  return (
+    <div className="stackGrid">
+      {markets.map((table) => (
+        <MarketTableCard key={table.name} name={table.name} quotes={table.quotes} />
+      ))}
     </div>
   );
 }
@@ -305,7 +302,7 @@ export default function Home() {
   const [view, setView] = useState<View>("Resumen");
   const nav: [View, React.ReactNode][] = [
     ["Resumen", <LayoutDashboard size={17} key="a" />],
-    ["Resultados", <BarChart3 size={17} key="b" />],
+    ["Mercados", <BarChart3 size={17} key="b" />],
     ["Posiciones", <WalletCards size={17} key="c" />],
     ["Límites", <ShieldAlert size={17} key="d" />],
   ];
@@ -345,7 +342,7 @@ export default function Home() {
           </div>
         </header>
         {view === "Resumen" && <Summary />}
-        {view === "Resultados" && <Results />}
+        {view === "Mercados" && <Markets />}
         {view === "Posiciones" && <PositionsView />}
         {view === "Límites" && <LimitsView />}
       </main>
