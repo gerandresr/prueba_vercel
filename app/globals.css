@@ -116,3 +116,38 @@ td { padding:13px 16px; border-top:1px solid var(--border); }
   .tableToolbar { gap: 12px; align-items: flex-start; }
   .search { width: 170px; }
 }
+.marketHistoryCard { overflow:hidden; }
+.marketHistoryHeader { padding:18px; display:flex; align-items:flex-start; justify-content:space-between; gap:18px; border-bottom:1px solid var(--border); }
+.marketHistoryHeader h3 { margin:0; font-size:14px; }
+.marketControls { display:flex; gap:12px; align-items:flex-end; flex-wrap:wrap; justify-content:flex-end; }
+.marketControls label, .customDateRow label { display:grid; gap:6px; }
+.marketControls label > span, .customDateRow label > span { font-size:10px; color:var(--muted); text-transform:uppercase; letter-spacing:.05em; }
+.marketSelect, .customDateRow input { border:1px solid var(--border); background:#0b1728; color:var(--text); border-radius:9px; padding:8px 10px; min-height:36px; }
+.marketSelect { min-width:160px; }
+.periodButtons { display:flex; border:1px solid var(--border); border-radius:9px; overflow:hidden; background:#0b1728; }
+.periodButtons button { border:0; border-right:1px solid var(--border); background:transparent; color:var(--muted); padding:9px 11px; font-size:11px; }
+.periodButtons button:last-child { border-right:0; }
+.periodButtons button:hover { color:var(--text); background:rgba(255,255,255,.035); }
+.periodButtons button.active { color:#fff; background:rgba(79,156,255,.18); box-shadow:inset 0 -2px var(--accent); }
+.customDateRow { display:flex; justify-content:flex-end; gap:10px; padding:12px 18px 0; }
+.marketStats { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:1px; background:var(--border); border-bottom:1px solid var(--border); }
+.marketStats > div { background:rgba(10,22,38,.98); padding:12px 18px; }
+.marketStats span { display:block; color:var(--muted); font-size:10px; text-transform:uppercase; letter-spacing:.05em; }
+.marketStats strong { display:block; margin-top:5px; font-size:15px; }
+.marketChartWrap { height:380px; padding:18px 12px 12px; }
+.chartState { height:100%; display:grid; place-items:center; color:var(--muted); font-size:12px; }
+.chartState.error { color:var(--red); }
+
+@media(max-width:900px){
+  .marketHistoryHeader { display:block; }
+  .marketControls { justify-content:flex-start; margin-top:14px; }
+  .marketStats { grid-template-columns:repeat(2,1fr); }
+}
+@media(max-width:620px){
+  .periodButtons { width:100%; }
+  .periodButtons button { flex:1; padding:9px 7px; }
+  .marketControls label { width:100%; }
+  .marketSelect { width:100%; }
+  .customDateRow { justify-content:flex-start; flex-wrap:wrap; }
+  .marketChartWrap { height:320px; }
+}
