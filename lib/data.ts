@@ -12,13 +12,62 @@ export const closingRates = [
   { benchmark: "UF-10", rate: 2.78, deltaBp: -1.6 },
 ];
 
-export const positions = [
-  { instrument: "DPF", duration: 0.65, dv01: -63.7 },
-  { instrument: "DPR", duration: 1.07, dv01: -1.5 },
+export type SubPosition = {
+  instrument: string;
+  duration: number;
+  dv01: number;
+};
+
+export type Position = {
+  instrument: string;
+  duration: number;
+  dv01: number;
+  children?: SubPosition[];
+};
+
+export const positions: Position[] = [
+  {
+    instrument: "DPF",
+    duration: 0.65,
+    dv01: -63.7,
+    children: [
+      { instrument: "30d", duration: 0.08, dv01: -18.4 },
+      { instrument: "180d", duration: 0.49, dv01: -24.9 },
+      { instrument: "270d", duration: 0.74, dv01: -20.4 },
+    ],
+  },
+  {
+    instrument: "DPR",
+    duration: 1.07,
+    dv01: -1.5,
+    children: [
+      { instrument: "30d", duration: 0.08, dv01: -0.4 },
+      { instrument: "180d", duration: 0.49, dv01: -0.6 },
+      { instrument: "270d", duration: 0.74, dv01: -0.5 },
+    ],
+  },
   { instrument: "Bancarios CLP", duration: 1.30, dv01: -5.6 },
   { instrument: "Bancarios UF", duration: 1.73, dv01: -1.5 },
-  { instrument: "Gobierno CLP", duration: 2.81, dv01: -31.7 },
-  { instrument: "Gobierno UF", duration: 2.87, dv01: -24.1 },
+  {
+    instrument: "Gobierno CLP",
+    duration: 2.81,
+    dv01: -31.7,
+    children: [
+      { instrument: "BTP27", duration: 1.92, dv01: -11.8 },
+      { instrument: "BTP28", duration: 2.74, dv01: -10.5 },
+      { instrument: "BTP29", duration: 3.61, dv01: -9.4 },
+    ],
+  },
+  {
+    instrument: "Gobierno UF",
+    duration: 2.87,
+    dv01: -24.1,
+    children: [
+      { instrument: "BTU28", duration: 2.31, dv01: -9.1 },
+      { instrument: "BTU30", duration: 3.05, dv01: -8.2 },
+      { instrument: "BTU31", duration: 3.78, dv01: -6.8 },
+    ],
+  },
 ];
 
 export const limits = [
